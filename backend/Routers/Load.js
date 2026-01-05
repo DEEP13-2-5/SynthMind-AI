@@ -26,11 +26,9 @@ router.post("/", checkCreditsOrSub, async (req, res) => {
     let k6Error = null;
 
     // --- OPTIONAL DEMO MODE GUARD ---
-    const mode = process.env.EXECUTION_MODE;
     const nodeEnv = process.env.NODE_ENV;
+    const mode = process.env.EXECUTION_MODE ?? "demo";
     const isDemoMode = mode === "demo";
-
-    console.log(`🔍 [Router] EXECUTION_MODE: "${mode}", NODE_ENV: "${nodeEnv}", isDemoMode: ${isDemoMode}`);
 
     if (isDemoMode) {
       console.log("🛠️ Router logic: Manual Demo Override is ON.");
@@ -115,8 +113,6 @@ router.post("/", checkCreditsOrSub, async (req, res) => {
     } else {
       // REAL MODE: Only runs if explicitly configured (e.g., Local Dev)
       console.log("⚡ ENV: Real Mode. Executing k6 and GitHub analysis...");
-      console.log("🧪 RAW k6 OUTPUT:", realTest);
-      console.log("📦 RAW GitHub OUTPUT:", realGithub);
 
       const [realTest, realGithub] = await Promise.all([
         testURL
@@ -135,6 +131,8 @@ router.post("/", checkCreditsOrSub, async (req, res) => {
       ]);
       testResult = realTest;
       githubResult = realGithub;
+      console.log("🧪 RAW k6 OUTPUT:", realTest);
+      console.log("📦 RAW GitHub OUTPUT:", realGithub);
     }
 
     console.log("✅ Analysis phase finished.");
@@ -345,6 +343,7 @@ Production inference — Not evaluated
       id: sessionId,
       metrics,
       charts,
+      healthData,
       github,
       ai: aiResponse,
       user: {
@@ -396,10 +395,17 @@ router.get("/latest", async (req, res) => {
   }
 });
 
-// 2. GET Test Result by ID (STRICT REGEX)
-router.get("/:id([0-9a-fA-F]{24})", async (req, res) => {
+// 2. GET Test Result by ID
+router.get("/:id", async (req, res) => {
   try {
-    const session = await TestSession.findById(req.params.id);
+    const sessionId = req.params.id;
+
+    // Validate if it's a real MongoDB ID before querying
+    if (!mongoose.isValidObjectId(sessionId)) {
+      return res.status(400).json({ error: "Invalid report ID format" });
+    }
+
+    const session = await TestSession.findById(sessionId);
     if (!session) return res.status(404).json({ error: "Report not found" });
 
     res.json({
@@ -418,15 +424,3 @@ router.get("/:id([0-9a-fA-F]{24})", async (req, res) => {
 });
 
 export default router;
-
-
-//frontend
-return res.json({
-  success: true,
-  sessionId: sessionKey,
-  metrics,
-  charts,
-  github,
-  ai: { message: aiMessage }
-});
-

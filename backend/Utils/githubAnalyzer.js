@@ -38,14 +38,32 @@ export const analyzeGithubRepo = async (repoUrl) => {
       `git clone --depth 1 --filter=blob:none ${repoUrl} ${tempDir}`
     );
 
-    const pkgPath = path.join(tempDir, "package.json");
+    // --- SEARCH HELPERS ---
+    const findFile = (name) => {
+      // Check root first
+      let rootPath = path.join(tempDir, name);
+      if (fs.existsSync(rootPath)) return rootPath;
 
-    if (fs.existsSync(pkgPath)) {
+      // Look in subdirectories (1 level deep)
+      const subdirs = fs.readdirSync(tempDir).filter(f => {
+        try {
+          return fs.statSync(path.join(tempDir, f)).isDirectory() && !f.startsWith('.');
+        } catch (e) { return false; }
+      });
+      for (const dir of subdirs) {
+        let subPath = path.join(tempDir, dir, name);
+        if (fs.existsSync(subPath)) return subPath;
+      }
+      return null;
+    };
+
+    const pkgPath = findFile("package.json");
+    if (pkgPath) {
       const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf-8"));
       const deps = { ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) };
 
       metrics.dependencyCount = Object.keys(deps).length;
-      metrics.hasStartScript = Boolean(pkg.scripts?.start);
+      metrics.hasStartScript = Boolean(pkg.scripts?.start || pkg.scripts?.dev);
 
       if (deps.express) metrics.framework = "Express";
       else if (deps.next) metrics.framework = "Next.js";
@@ -55,13 +73,13 @@ export const analyzeGithubRepo = async (repoUrl) => {
       else if (deps.pg) metrics.database = "Postgres";
       else if (deps.mysql2) metrics.database = "MySQL";
 
-      if (!metrics.hasStartScript) metrics.issues.push("Missing start script");
+      if (!metrics.hasStartScript) metrics.issues.push("Missing start/dev script");
     } else {
       metrics.issues.push("package.json missing");
     }
 
-    const dockerfilePath = path.join(tempDir, "Dockerfile");
-    if (fs.existsSync(dockerfilePath)) {
+    const dockerfilePath = findFile("Dockerfile");
+    if (dockerfilePath) {
       metrics.docker.present = true;
       const dockerfile = fs.readFileSync(dockerfilePath, "utf-8");
 
@@ -72,19 +90,40 @@ export const analyzeGithubRepo = async (repoUrl) => {
       else metrics.issues.push("Dockerfile missing EXPOSE");
     }
 
-    if (fs.existsSync(path.join(tempDir, ".github", "workflows"))) {
+    // Check for workflows anywhere
+    const findDir = (name) => {
+      if (fs.existsSync(path.join(tempDir, ".github", name))) return true;
+      const subdirs = fs.readdirSync(tempDir).filter(f => {
+        try {
+          return fs.statSync(path.join(tempDir, f)).isDirectory() && !f.startsWith('.');
+        } catch (e) { return false; }
+      });
+      for (const dir of subdirs) {
+        if (fs.existsSync(path.join(tempDir, dir, ".github", name))) return true;
+      }
+      return false;
+    };
+
+    if (findDir("workflows")) {
       metrics.cicd.present = true;
     } else {
       metrics.issues.push("CI/CD pipeline missing");
     }
 
     const k8sDirs = ["k8s", "manifests", "deploy", "deployment"];
-    for (const dir of k8sDirs) {
-      if (fs.existsSync(path.join(tempDir, dir))) {
-        metrics.kubernetes.present = true;
-        metrics.kubernetes.type = "raw";
-        break;
-      }
+    const hasK8s = k8sDirs.some(dir => {
+      if (fs.existsSync(path.join(tempDir, dir))) return true;
+      const subdirs = fs.readdirSync(tempDir).filter(f => {
+        try {
+          return fs.statSync(path.join(tempDir, f)).isDirectory() && !f.startsWith('.');
+        } catch (e) { return false; }
+      });
+      return subdirs.some(sd => fs.existsSync(path.join(tempDir, sd, dir)));
+    });
+
+    if (hasK8s) {
+      metrics.kubernetes.present = true;
+      metrics.kubernetes.type = "raw";
     }
 
     if (fs.existsSync(path.join(tempDir, "Chart.yaml"))) {
@@ -105,8 +144,8 @@ export const analyzeGithubRepo = async (repoUrl) => {
       metrics.summary.devOpsScore >= 70
         ? "low"
         : metrics.summary.devOpsScore >= 40
-        ? "medium"
-        : "high";
+          ? "medium"
+          : "high";
 
     return metrics;
   } finally {

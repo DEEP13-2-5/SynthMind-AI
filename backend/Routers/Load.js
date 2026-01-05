@@ -24,12 +24,12 @@ router.post("/", checkCreditsOrSub, async (req, res) => {
     let githubResult = null;
     let k6Error = null;
 
-    // --- STRICT DEMO MODE GUARD ---
-    // Render/Production environments MUST NOT call k6 or git directly.
-    const isDemoMode = process.env.EXECUTION_MODE === "demo" || process.env.NODE_ENV === "production";
+    // --- OPTIONAL DEMO MODE GUARD ---
+    // Only enters Demo Mode if EXPLICITLY set to "demo".
+    const isDemoMode = process.env.EXECUTION_MODE === "demo";
 
     if (isDemoMode) {
-      console.log("🛠️ ENV: Demo Mode. Bypassing binaries.");
+      console.log("🛠️ ENV: Demo Mode Manual Override. Bypassing binaries.");
 
       // --- SMART CONNECTIVITY CHECK ---
       let isUp = true;

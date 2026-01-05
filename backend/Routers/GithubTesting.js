@@ -10,7 +10,7 @@ router.post("/github-test", async (req, res) => {
     return res.status(400).json({ error: "Valid GitHub repoUrl required" });
   }
 
-  const isDemoMode = process.env.EXECUTION_MODE === "demo" || process.env.NODE_ENV === "production";
+  const isDemoMode = process.env.EXECUTION_MODE === "demo";
 
   if (isDemoMode) {
     console.log("🛠️ ENV: Demo Mode. Simulating GitHub analysis...");

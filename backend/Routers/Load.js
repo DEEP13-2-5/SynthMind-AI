@@ -25,11 +25,14 @@ router.post("/", checkCreditsOrSub, async (req, res) => {
     let k6Error = null;
 
     // --- OPTIONAL DEMO MODE GUARD ---
-    // Only enters Demo Mode if EXPLICITLY set to "demo".
-    const isDemoMode = process.env.EXECUTION_MODE === "demo";
+    const mode = process.env.EXECUTION_MODE;
+    const nodeEnv = process.env.NODE_ENV;
+    const isDemoMode = mode === "demo";
+
+    console.log(`🔍 [Router] EXECUTION_MODE: "${mode}", NODE_ENV: "${nodeEnv}", isDemoMode: ${isDemoMode}`);
 
     if (isDemoMode) {
-      console.log("🛠️ ENV: Demo Mode Manual Override. Bypassing binaries.");
+      console.log("🛠️ Router logic: Manual Demo Override is ON.");
 
       // --- SMART CONNECTIVITY CHECK ---
       let isUp = true;

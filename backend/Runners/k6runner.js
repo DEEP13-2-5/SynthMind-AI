@@ -12,15 +12,17 @@ import os from "os";
  */
 export const runK6Test = (
   testURL,
-  { vus = 100, duration = "30s" } = {}
+  { vus = 100, duration = "30s", forceSimulation = false } = {}
 ) => {
   return new Promise((resolve, reject) => {
     // --- DEMO MODE / SIMULATION LOGIC ---
-    // If explicitly in demo mode OR running in production where k6 might be restricted
-    const isDemo = process.env.EXECUTION_MODE === "demo";
+    const mode = process.env.EXECUTION_MODE;
+    const isDemo = mode === "demo";
+
+    console.log(`🔍 [Runner] EXECUTION_MODE: "${mode}", isDemo: ${isDemo}`);
 
     if (isDemo) {
-      console.log("🛠️ RUNNING IN DEMO MODE: Generating simulated metrics...");
+      console.log("🛠️ Runner logic: Simulation ACTIVE.");
 
       // Generate realistic-looking k6 metrics
       const mockLatency = 150 + Math.random() * 300; // 150-450ms
@@ -76,10 +78,8 @@ export const runK6Test = (
 
       exec("k6 version", (verErr, verStdout) => {
         if (verErr) {
-          console.error("❌ K6 Binary not found. Falling back to simulation...");
-          // Recursive call but forced to demo would be cleaner, 
-          // but let's just implement a fallback here if binary is missing.
-          return resolve(runK6Test(testURL, { vus, duration })); // Re-tries which will hit the isDemo logic or just return mock
+          console.error("❌ K6 Binary not found. Triggering fallback simulation...");
+          return resolve(runK6Test(testURL, { vus, duration, forceSimulation: true }));
         }
         console.log(`✅ Running with K6: ${verStdout.trim()}`);
 

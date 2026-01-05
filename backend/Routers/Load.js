@@ -388,6 +388,31 @@ router.get("/latest", async (req, res) => {
   }
 });
 
+// GET Test History -> GET /api/load-test/history
+router.get("/history", async (req, res) => {
+  try {
+    // Fetch last 5 sessions for the user, ordered by date
+    const sessions = await TestSession.find({ user: req.user._id })
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .select("createdAt metrics url");
+
+    // Reverse to show oldest to newest in chart (left to right)
+    const history = sessions.reverse().map((s, index) => ({
+      id: s._id,
+      timestamp: `Test ${index + 1}`, // Human readable label
+      actualTime: s.createdAt,
+      throughput: s.metrics?.throughput || 0,
+      failureRate: s.metrics?.failureRateUnderTest || 0,
+    }));
+
+    res.json({ success: true, history });
+  } catch (err) {
+    console.error("❌ Get History Error:", err);
+    res.status(500).json({ error: "Failed to fetch test history" });
+  }
+});
+
 // GET Test Result -> GET /api/load-test/:id
 router.get("/:id", async (req, res) => {
   try {

@@ -1,7 +1,7 @@
 import {
     PieChart, Pie, Cell,
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-    BarChart, Bar
+    BarChart, Bar, AreaChart, Area
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Activity } from "lucide-react";
@@ -39,53 +39,77 @@ const securityData = [
 ];
 
 export function SystemHealthChart({ data }: { data?: any[] }) {
-    const chartData = data || healthData;
+    const rawData = data || healthData;
+    const chartData = rawData.filter((d: any) => d.value > 0);
+    const hasData = chartData.length > 0;
+
+    // Find success percentage (first item is usually success)
+    const successEntry = rawData.find((d: any) => d.name.includes("2xx") || d.name.includes("Success"));
+    const successValue = successEntry ? successEntry.value : 0;
+    const healthStatus = successValue >= 95 ? "Excellent" : (successValue >= 80 ? "Stable" : "Critical");
+    const healthColor = successValue >= 95 ? "text-green-500" : (successValue >= 80 ? "text-yellow-500" : "text-red-500");
+
     return (
-        <Card className="flex flex-col h-full shadow-lg border-border/50">
+        <Card className="flex flex-col h-full shadow-lg border-border/50 overflow-hidden">
             <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Traffic Outcome Under Test Load</CardTitle>
-                <CardDescription>Distribution of request outcomes during synthetic load</CardDescription>
+                <CardTitle className="text-lg">System Health Gauge</CardTitle>
+                <CardDescription>Overall request success vs. failure breakdown</CardDescription>
             </CardHeader>
-            <CardContent className="flex-1 flex flex-col items-center justify-center">
-                <div className="h-[250px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                            <Pie
-                                data={chartData}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={60}
-                                outerRadius={80}
-                                paddingAngle={5}
-                                dataKey="value"
-                            >
-                                {chartData.map((entry: any, index: number) => (
-                                    <Cell key={`cell-${index}`} fill={entry.color} />
-                                ))}
-                            </Pie>
-                            <Tooltip
-                                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                            />
-                        </PieChart>
-                    </ResponsiveContainer>
+            <CardContent className="flex-1 flex flex-col items-center justify-center relative pt-4">
+                <div className="h-[250px] w-full relative">
+                    {hasData ? (
+                        <>
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={chartData}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={70}
+                                        outerRadius={90}
+                                        paddingAngle={chartData.length > 1 ? 4 : 0}
+                                        dataKey="value"
+                                        stroke="none"
+                                        cornerRadius={4}
+                                    >
+                                        {chartData.map((entry: any, index: number) => (
+                                            <Cell key={`cell-${index}`} fill={entry.color ?? "#64748b"} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip
+                                        contentStyle={{ borderRadius: '12px', border: '1px solid hsl(var(--border))', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', background: 'hsl(var(--background))' }}
+                                    />
+                                </PieChart>
+                            </ResponsiveContainer>
+                            {/* Center Label */}
+                            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                <span className="text-3xl font-bold tracking-tight">{successValue.toFixed(1)}%</span>
+                                <span className={`text-[10px] font-bold uppercase tracking-widest ${healthColor}`}>
+                                    {healthStatus}
+                                </span>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                            Waiting for telemetry...
+                        </div>
+                    )}
                 </div>
 
-                <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-4 text-xs max-w-full px-2">
-                    {chartData.map((entry: any, index: number) => (
-                        <div key={index} className="flex items-center gap-1.5">
-                            <div
-                                className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                                style={{ backgroundColor: entry.color }}
-                            />
-                            <span className="text-muted-foreground whitespace-nowrap sm:whitespace-normal">
-                                {entry.name}
-                            </span>
+                <div className="flex flex-col gap-2 w-full mt-6 px-4">
+                    {rawData.map((entry: any, index: number) => (
+                        <div key={index} className="flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                                <span className="text-muted-foreground font-medium">{entry.name}</span>
+                            </div>
+                            <span className="font-mono font-bold">{entry.value.toFixed(1)}%</span>
                         </div>
                     ))}
                 </div>
 
-                <p className="text-xs text-muted-foreground mt-4 text-center max-w-[90%] border-t pt-3 w-full">
-                    Failures include rejections, blocks, and server errors observed under test traffic.
+                <p className="text-[10px] text-muted-foreground mt-6 text-center italic opacity-70">
+                    * Percentages relative to total test volume.
                 </p>
             </CardContent>
         </Card>
@@ -94,13 +118,19 @@ export function SystemHealthChart({ data }: { data?: any[] }) {
 
 export function ThroughputChart({ data }: { data?: any[] }) {
     const chartData = data || throughputData;
-    const isEmpty = !data || data.length === 0 || data.every(d => d.value === 0 && d.errors === 0);
+    const isEmpty =
+        !data ||
+        data.length === 0 ||
+        data.every(d =>
+            (d.value ?? d.throughput ?? d.success ?? 0) === 0 &&
+            (d.errors ?? d.errorRate ?? 0) === 0
+        );
 
     return (
         <Card className="shadow-lg border-border/50">
             <CardHeader>
-                <CardTitle className="text-lg">Throughput vs Error Rate</CardTitle>
-                <CardDescription>Correlation between load and failure spikes</CardDescription>
+                <CardTitle className="text-lg">Throughput Reliability</CardTitle>
+                <CardDescription>Success vs. Failure volume over time</CardDescription>
             </CardHeader>
             <CardContent>
                 <div className="h-[300px] w-full relative">
@@ -116,16 +146,46 @@ export function ThroughputChart({ data }: { data?: any[] }) {
                         </div>
                     ) : (
                         <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={chartData}>
+                            <AreaChart data={chartData}>
+                                <defs>
+                                    <linearGradient id="colorSuccess" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#2563eb" stopOpacity={0.4} />
+                                        <stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
+                                    </linearGradient>
+                                    <linearGradient id="colorError" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.4} />
+                                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                                <XAxis dataKey="timestamp" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                                <YAxis yAxisId="left" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                                <YAxis yAxisId="right" orientation="right" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                                <Tooltip />
-                                <Legend />
-                                <Line yAxisId="left" type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} name="Reqs/s" />
-                                <Line yAxisId="right" type="monotone" dataKey="errors" stroke="#ef4444" strokeWidth={2} dot={false} name="Errors" />
-                            </LineChart>
+                                <XAxis dataKey="timestamp" stroke="#888888" fontSize={11} tickLine={false} axisLine={false} />
+                                <YAxis stroke="#888888" fontSize={11} tickLine={false} axisLine={false} label={{ value: 'Reqs/s', angle: -90, position: 'insideLeft', offset: 10, fontSize: 10, fill: '#888888' }} />
+                                <Tooltip
+                                    contentStyle={{ borderRadius: '12px', border: '1px solid hsl(var(--border))', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', background: 'hsl(var(--background))' }}
+                                    itemStyle={{ fontSize: '12px', fontWeight: 600 }}
+                                />
+                                <Legend verticalAlign="top" height={36} iconType="circle" />
+                                <Area
+                                    type="monotone"
+                                    dataKey="success"
+                                    stackId="1"
+                                    stroke="#2563eb"
+                                    strokeWidth={3}
+                                    fillOpacity={1}
+                                    fill="url(#colorSuccess)"
+                                    name="Successful Reqs/s"
+                                />
+                                <Area
+                                    type="monotone"
+                                    dataKey="errors"
+                                    stackId="1"
+                                    stroke="#ef4444"
+                                    strokeWidth={3}
+                                    fillOpacity={1}
+                                    fill="url(#colorError)"
+                                    name="Failed Reqs/s"
+                                />
+                            </AreaChart>
                         </ResponsiveContainer>
                     )}
                 </div>

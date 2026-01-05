@@ -123,20 +123,20 @@ export default function Dashboard() {
   const healthData = m
     ? [
       {
-        name: "Successful Responses (2xx)",
+        name: "Success (200 OK)",
         value: isFailed ? 0 : Math.max(0, 100 - (failRate * 100)),
         color: "#2563eb"
       },
       {
-        name: "Failed Requests (Blocked / Rejected / 5xx)",
-        // Amber is everything that failed BUT IS NOT a generic server error
-        // If serverErrorRate is missing (legacy), simple math: failRate - 0 = failRate.
-        value: isFailed ? 100 : Math.max(0, (failRate * 100) - (serverRate * 100)),
+        name: "Client Error / Rate Limited (4xx)",
+        // Amber is specifically 4xx (total fail rate minus the 5xx rate)
+        value: isFailed ? 0 : Math.max(0, (failRate * 100) - (serverRate * 100)),
         color: "#f59e0b"
       },
       {
-        name: "Server Errors (5xx)",
-        value: Math.min(100, serverRate * 100),
+        name: "Internal Server Failure (5xx)",
+        // Red is specifically 5xx (server side errors)
+        value: isFailed ? 100 : Math.min(100, serverRate * 100),
         color: "#ef4444"
       },
     ]
@@ -144,11 +144,31 @@ export default function Dashboard() {
 
   const throughputData = m
     ? [
-      { timestamp: "T-4s", value: variance(m.throughput * 0.8), errors: variance(m.throughput * 0.8 * failRate) },
-      { timestamp: "T-3s", value: variance(m.throughput * 0.9), errors: variance(m.throughput * 0.9 * failRate) },
-      { timestamp: "T-2s", value: variance(m.throughput * 1.0), errors: variance(m.throughput * 1.0 * failRate) },
-      { timestamp: "T-1s", value: variance(m.throughput * 1.1), errors: variance(m.throughput * 1.1 * failRate) },
-      { timestamp: "Latest", value: m.throughput, errors: m.throughput * failRate },
+      {
+        timestamp: "T-4s",
+        success: variance(m.throughput * 0.8 * (1 - failRate)),
+        errors: variance(m.throughput * 0.8 * failRate)
+      },
+      {
+        timestamp: "T-3s",
+        success: variance(m.throughput * 0.9 * (1 - failRate)),
+        errors: variance(m.throughput * 0.9 * failRate)
+      },
+      {
+        timestamp: "T-2s",
+        success: variance(m.throughput * 1.0 * (1 - failRate)),
+        errors: variance(m.throughput * 1.0 * failRate)
+      },
+      {
+        timestamp: "T-1s",
+        success: variance(m.throughput * 1.1 * (1 - failRate)),
+        errors: variance(m.throughput * 1.1 * failRate)
+      },
+      {
+        timestamp: "Latest",
+        success: m.throughput * (1 - failRate),
+        errors: m.throughput * failRate
+      },
     ]
     : [];
 

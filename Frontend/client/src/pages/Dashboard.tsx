@@ -117,7 +117,7 @@ export default function Dashboard() {
     : [];
 
   const throughputData = m
-    ? [{ timestamp: "Test Run", value: m.throughput, errors: m.throughput * failRate }]
+    ? [{ timestamp: "Latest", value: m.throughput, errors: m.throughput * failRate }]
     : [];
 
   const toMs = (v?: number) => {
@@ -131,7 +131,7 @@ export default function Dashboard() {
       { percentile: "p95", latency: toMs(m.latency?.p95) },
       { percentile: "p99", latency: toMs(m.latency?.p99) },
       { percentile: "avg", latency: toMs(m.latency?.avg) },
-    ].filter(item => item.latency > 0) // Remove zero values
+    ].filter(item => item.latency > 0)
     : [];
 
   const securityData = g
@@ -142,7 +142,7 @@ export default function Dashboard() {
       { subject: "Scripts", A: g.hasStartScript ? 100 : 0, fullMark: 100 },
       { subject: "Overall", A: g.summary?.devOpsScore ?? 0, fullMark: 100 },
     ]
-    : mockSecurity; // Show demo data instead of empty
+    : undefined;
 
   const stats = [
     {

@@ -42,6 +42,16 @@ export const parseK6Data = (raw) => {
     failureRateUnderTest = failed.count / totalRequests;
   }
 
+  // ---------------------------------------------------------
+  // SERVER ERROR RATE (5xx)
+  // ---------------------------------------------------------
+  const serverErrMetric = getMetric("server_errors");
+  let serverErrorRate = 0;
+  if (totalRequests > 0) {
+    const errCount = serverErrMetric.count || 0;
+    serverErrorRate = errCount / totalRequests;
+  }
+
   return {
     latency: {
       avg: Number.isFinite(http.avg) ? http.avg : null,
@@ -57,6 +67,7 @@ export const parseK6Data = (raw) => {
     // IMPORTANT:
     // This represents *any* request failure under load
     failureRateUnderTest,
+    serverErrorRate,
 
     // Frontend compatibility helpers (Flattened)
     p50: http["p(50)"] ?? http.med ?? 0,
@@ -125,12 +136,19 @@ export const buildChartResponse = (metrics) => {
    =========================== */
 export const buildPieChartData = (metrics) => {
   const failRate = metrics.failureRateUnderTest || 0;
-  const successRate = 1 - failRate;
+  const serverRate = metrics.serverErrorRate || 0;
+  // Successful is everything that didn't fail
+  const successRate = Math.max(0, 1 - failRate);
 
   return [
     { name: "Successful Responses (2xx)", value: Number((successRate * 100).toFixed(2)), color: "#2563eb" },
-    { name: "Failed Requests (Blocked / Rejected / 5xx)", value: Number((failRate * 100).toFixed(2)), color: "#f59e0b" },
-    { name: "Server Errors (5xx)", value: 0, color: "#ef4444" }, // Detailed split requires more k6 tags
+    {
+      name: "Failed Requests (Blocked / Rejected / 5xx)",
+      // This amber slice represents non-server errors (rejections/timeouts)
+      value: Number((Math.max(0, failRate - serverRate) * 100).toFixed(2)),
+      color: "#f59e0b"
+    },
+    { name: "Server Errors (5xx)", value: Number((serverRate * 100).toFixed(2)), color: "#ef4444" },
   ];
 };
 

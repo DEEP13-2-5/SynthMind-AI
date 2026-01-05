@@ -122,8 +122,8 @@ export function ThroughputChart({ data }: { data?: any[] }) {
                                 <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
                                 <Tooltip />
                                 <Legend />
-                                <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} name="Reqs/s" />
-                                <Line type="monotone" dataKey="errors" stroke="#ef4444" strokeWidth={2} dot={false} name="Errors" />
+                                <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={true} name="Reqs/s" />
+                                <Line type="monotone" dataKey="errors" stroke="#ef4444" strokeWidth={2} dot={true} name="Errors" />
                             </LineChart>
                         </ResponsiveContainer>
                     )}
@@ -175,8 +175,8 @@ export function ScalabilityChart({ data }: { data?: any[] }) {
 export function SecurityRadarChart({ data, runtimeMetrics }: { data?: any[], runtimeMetrics?: any }) {
     const chartData = data || securityData;
 
-    // Check if data is "empty" (all zeros)
-    const isEmpty = !data || data.length === 0 || data.every(d => d.A === 0);
+    // Check if data is truly null/undefined (No repo provided)
+    const isEmpty = !data || data.length === 0;
 
     // Calculate Overall Status based on GATING logic
     // 1. If Runtime Failed (high error rate) -> FAIL
@@ -220,9 +220,13 @@ export function SecurityRadarChart({ data, runtimeMetrics }: { data?: any[], run
                             <div className="bg-muted/30 rounded-full p-4 mb-3">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground w-8 h-8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="m9 12 2 2 4-4" /></svg>
                             </div>
-                            <h3 className="text-sm font-semibold text-foreground">No Repository Detected</h3>
+                            <h3 className="text-sm font-semibold text-foreground">
+                                {runtimeMetrics?.url ? "Analysis in Progress..." : "No Repository Detected"}
+                            </h3>
                             <p className="text-xs text-muted-foreground mt-1 max-w-[200px]">
-                                Add a GitHub URL to scan for Docker, CI/CD, and K8s configurations.
+                                {runtimeMetrics?.url
+                                    ? "We are currently auditing your repository for DevOps best practices."
+                                    : "Add a GitHub URL to scan for Docker, CI/CD, and K8s configurations."}
                             </p>
                         </div>
                     ) : (
@@ -302,14 +306,14 @@ export function SummaryMatrixTable({ metrics, github }: { metrics?: any, github?
         {
             category: "Architecture",
             metric: "Docker Container",
-            value: github?.docker?.present ? "Present" : "Not detected in repository",
+            value: github?.docker?.present ? "Present" : (metrics?.url ? "Pending Audit..." : "Not detected in repository"),
             status: github?.docker?.present ? "Pass" : "Warn",
             color: github?.docker?.present ? "text-green-500" : "text-yellow-500"
         },
         {
             category: "Architecture",
             metric: "CI/CD Pipeline",
-            value: github?.cicd?.present ? "Present" : "Not detected in repository",
+            value: github?.cicd?.present ? "Present" : (metrics?.url ? "Pending Audit..." : "Not detected in repository"),
             status: github?.cicd?.present ? "Pass" : "Warn",
             color: github?.cicd?.present ? "text-green-500" : "text-yellow-500"
         }

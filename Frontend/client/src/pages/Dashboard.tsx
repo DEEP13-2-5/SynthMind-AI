@@ -96,7 +96,7 @@ export default function Dashboard() {
 
   /* ---------------- REAL DATA LOGIC ---------------- */
 
-  const isFailed = m && m.totalRequests === 0 && (m.vus > 0 || m.duration === null);
+  const isFailed = m?.status === "failed";
 
   // Safe access to failure rate with fallback for legacy data
   const failRate = m?.failureRateUnderTest ?? m?.errorRate ?? 0;
@@ -132,7 +132,7 @@ export default function Dashboard() {
 
   const toMs = (v?: number) => {
     if (typeof v !== "number" || v === 0) return 0;
-    return v > 10 ? v : v * 1000;
+    return v; // k6 already returns milliseconds
   };
 
   const scalabilityData = m

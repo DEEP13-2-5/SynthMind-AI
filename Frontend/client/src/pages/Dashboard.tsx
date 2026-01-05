@@ -27,7 +27,6 @@ import {
 export default function Dashboard() {
   const { user, token } = useAuth();
   const [latestData, setLatestData] = useState<any>(null);
-  const [historyData, setHistoryData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const chatRef = useRef<HTMLDivElement | null>(null);
@@ -37,16 +36,9 @@ export default function Dashboard() {
     if (!user || !token) return;
 
     setIsLoading(true);
-    // Fetch latest and history in parallel
-    Promise.all([
-      api.getLatestLoadTest(token),
-      api.getTestHistory(token)
-    ])
-      .then(([latest, history]) => {
+    api.getLatestLoadTest(token)
+      .then((latest) => {
         setLatestData(latest);
-        if (history?.success) {
-          setHistoryData(history.history || []);
-        }
       })
       .catch((err: any) => console.error("Fetch error:", err))
       .finally(() => setIsLoading(false));
@@ -93,14 +85,6 @@ export default function Dashboard() {
     { subject: "Overall", A: 75, fullMark: 100 },
   ];
 
-  /* ---------------- REAL DATA WITH SYNTHETIC TREND ---------------- */
-
-  // Helper to add small variance (+/- 10%)
-  const variance = (base: number) => {
-    if (!base) return 0;
-    const variation = base * 0.1;
-    return Math.max(0, base - variation + Math.random() * (variation * 2));
-  };
 
   /* ---------------- REAL DATA LOGIC ---------------- */
 
@@ -132,15 +116,9 @@ export default function Dashboard() {
     ]
     : [];
 
-  const throughputData = historyData.length > 0
-    ? historyData.map(h => ({
-      timestamp: h.timestamp,
-      value: h.throughput,
-      errors: h.throughput * h.failureRate
-    }))
-    : m
-      ? [{ timestamp: "Test Run", value: m.throughput, errors: m.throughput * failRate }]
-      : [];
+  const throughputData = m
+    ? [{ timestamp: "Test Run", value: m.throughput, errors: m.throughput * failRate }]
+    : [];
 
   const toMs = (v?: number) => {
     if (typeof v !== "number" || v === 0) return 0;

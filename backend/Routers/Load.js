@@ -388,46 +388,10 @@ router.get("/latest", async (req, res) => {
   }
 });
 
-// GET Test History -> GET /api/load-test/history (MUST BE ABOVE /:id)
-router.get("/history", async (req, res) => {
+// 2. GET Test Result by ID (STRICT REGEX)
+router.get("/:id([0-9a-fA-F]{24})", async (req, res) => {
   try {
-    console.log(`📊 [Router] Fetching history for user: ${req.user._id}`);
-
-    // Fetch last 5 sessions for the user, ordered by date
-    const sessions = await TestSession.find({ user: req.user._id })
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .select("createdAt metrics url");
-
-    // Reverse to show oldest to newest in chart (left to right)
-    const history = sessions.reverse().map((s, index) => ({
-      id: s._id,
-      timestamp: `Test ${index + 1}`, // Human readable label
-      actualTime: s.createdAt,
-      throughput: s.metrics?.throughput || 0,
-      failureRate: s.metrics?.failureRateUnderTest || 0,
-    }));
-
-    res.json({ success: true, history });
-  } catch (err) {
-    console.error("❌ Get History Error:", err);
-    res.status(500).json({ error: "Failed to fetch test history" });
-  }
-});
-
-
-// GET Test Result -> GET /api/load-test/:id
-router.get("/:id", async (req, res) => {
-  try {
-    const sessionId = req.params.id;
-
-    // PROFESSIONAL GUARD: Validate ObjectId before querying
-    if (!mongoose.isValidObjectId(sessionId)) {
-      console.log(`📡 [Router] Skipping invalid ID: ${sessionId}`);
-      return res.status(400).json({ error: "Invalid report ID" });
-    }
-
-    const session = await TestSession.findById(sessionId);
+    const session = await TestSession.findById(req.params.id);
     if (!session) return res.status(404).json({ error: "Report not found" });
 
     res.json({
@@ -440,7 +404,7 @@ router.get("/:id", async (req, res) => {
       aiVerdict: session.ai?.verdict || "Passed"
     });
   } catch (err) {
-    console.error("❌ Get Test Error:", err);
+    console.error("❌ Get Test ID Error:", err);
     res.status(500).json({ error: "Failed to fetch test report" });
   }
 });

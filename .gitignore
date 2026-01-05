@@ -7,3 +7,4 @@ verify_flow.js
 dist
 build
 .local
+*.zip

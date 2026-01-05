@@ -420,8 +420,14 @@ router.get("/history", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const sessionId = req.params.id;
-    const session = await TestSession.findById(sessionId);
 
+    // PROFESSIONAL GUARD: Validate ObjectId before querying
+    if (!mongoose.isValidObjectId(sessionId)) {
+      console.log(`📡 [Router] Skipping invalid ID: ${sessionId}`);
+      return res.status(400).json({ error: "Invalid report ID" });
+    }
+
+    const session = await TestSession.findById(sessionId);
     if (!session) return res.status(404).json({ error: "Report not found" });
 
     res.json({

@@ -20,7 +20,7 @@ import {
   SystemHealthChart,
   ThroughputChart,
   ScalabilityChart,
-  SecurityRadarChart,
+  RepositorySignalsPanel,
   SummaryMatrixTable
 } from "@/components/DashboardCharts";
 
@@ -244,7 +244,7 @@ export default function Dashboard() {
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               <ThroughputChart data={throughputData} />
               <ScalabilityChart data={scalabilityData} />
-              <SecurityRadarChart data={securityData} runtimeMetrics={m} />
+              <RepositorySignalsPanel data={securityData} runtimeMetrics={m} />
             </div>
 
             <div className="mt-8">

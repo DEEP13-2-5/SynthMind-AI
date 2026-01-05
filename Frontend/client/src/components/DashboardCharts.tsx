@@ -60,7 +60,7 @@ export function SystemHealthChart({ data }: { data?: any[] }) {
                                 dataKey="value"
                             >
                                 {chartData.map((entry: any, index: number) => (
-                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                    <Cell key={`cell-${index}`} fill={entry.color ?? "#64748b"} />
                                 ))}
                             </Pie>
                             <Tooltip
@@ -94,7 +94,13 @@ export function SystemHealthChart({ data }: { data?: any[] }) {
 
 export function ThroughputChart({ data }: { data?: any[] }) {
     const chartData = data || throughputData;
-    const isEmpty = !data || data.length === 0 || data.every(d => d.value === 0 && d.errors === 0);
+    const isEmpty =
+        !data ||
+        data.length === 0 ||
+        data.every(d =>
+            (d.value ?? d.throughput ?? 0) === 0 &&
+            (d.errors ?? d.errorRate ?? 0) === 0
+        );
 
     return (
         <Card className="shadow-lg border-border/50">
@@ -172,7 +178,7 @@ export function ScalabilityChart({ data }: { data?: any[] }) {
     );
 }
 
-export function SecurityRadarChart({ data, runtimeMetrics }: { data?: any[], runtimeMetrics?: any }) {
+export function RepositorySignalsPanel({ data, runtimeMetrics }: { data?: any[], runtimeMetrics?: any }) {
     const chartData = data || securityData;
 
     // Check if data is truly null/undefined (No repo provided)
@@ -191,7 +197,9 @@ export function SecurityRadarChart({ data, runtimeMetrics }: { data?: any[], run
 
     // Check repo completeness (are critical signals present?)
     // We filter out 'Overall' from the check to avoid double counting
-    const repoSignalsMissing = chartData.some(d => d.subject !== 'Overall' && d.A < 50);
+    const repoSignalsMissing = chartData.some(
+        d => d.subject !== 'Overall' && (d.A ?? 0) === 0
+    );
 
     let overallStatus = "Pass";
     let overallColor = "text-green-500";
@@ -299,8 +307,12 @@ export function SummaryMatrixTable({ metrics, github }: { metrics?: any, github?
         {
             category: "Performance",
             metric: "Latency (p95)",
-            value: metrics ? `${metrics.latency.p95}ms` : "N/A",
-            status: metrics && metrics.latency.p95 < 500 ? "Pass" : "Warn",
+            value: metrics?.latency?.p95 != null
+                ? `${metrics.latency.p95}ms`
+                : "N/A",
+            status: metrics?.latency?.p95 != null && metrics.latency.p95 < 500
+                ? "Pass"
+                : "Warn",
             color: "text-green-500"
         },
         {

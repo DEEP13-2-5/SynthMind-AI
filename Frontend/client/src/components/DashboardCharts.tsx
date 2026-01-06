@@ -38,52 +38,157 @@ const securityData = [
     { subject: 'Input Validation', A: 70, fullMark: 150 },
 ];
 
-export function SystemHealthChart({ data }: { data?: any[] }) {
+export function SystemHealthChart({ data, metrics, github }: { data?: any[], metrics?: any, github?: any }) {
     const rawData = data || healthData;
     const chartData = rawData.filter((d: any) => d.value > 0);
     const hasData = chartData.length > 0;
 
-    // Find success percentage (first item is usually success)
-    const successEntry = rawData.find((d: any) => d.name.includes("2xx") || d.name.includes("Success"));
-    const successValue = successEntry ? successEntry.value : 0;
-    const healthStatus = successValue >= 95 ? "Excellent" : (successValue >= 80 ? "Stable" : "Critical");
-    const healthColor = successValue >= 95 ? "text-green-500" : (successValue >= 80 ? "text-yellow-500" : "text-red-500");
+    // Calculate Launch Readiness Score (0-100)
+    const calculateLaunchScore = () => {
+        // Default to acceptable score if no data yet, but effectively 0 for calculating
+        if (!metrics && !github) return 0;
+
+        // ------------------------------------------
+        // PART 1: Repository Signals (Max 50 points)
+        // ------------------------------------------
+        let githubScore = 0;
+        if (github) {
+            // Docker containerization (15 pts) - Essential for deployment
+            if (github.docker?.present) githubScore += 15;
+
+            // CI/CD Pipelines (15 pts) - Essential for automation
+            if (github.cicd?.present) githubScore += 15;
+
+            // Kubernetes (10 pts) - Orchestration
+            if (github.kubernetes?.present) githubScore += 10;
+
+            // Start Scripts (10 pts) - Runnability
+            if (github.hasStartScript) githubScore += 10;
+        }
+
+        // ------------------------------------------
+        // PART 2: Runtime Performance (Max 50 points)
+        // ------------------------------------------
+        let runtimeScore = 50; // Start perfect, deduct for issues
+
+        if (metrics) {
+            // Get error rates
+            const failRate = metrics.failureRateUnderTest || 0;
+            const p95 = metrics.latency?.p95 || 0;
+            const p99 = metrics.latency?.p99 || 0;
+            const p50 = metrics.latency?.p50 || 0;
+
+            // Deduct for errors (Critical)
+            if (failRate > 0.01) runtimeScore -= 25;       // >1% errors: Lose 25 pts (Half of runtime score)
+            else if (failRate > 0.001) runtimeScore -= 15; // >0.1% errors: Lose 15 pts
+
+            // Deduct for Latency (Experience)
+            if (p95 > 1000) runtimeScore -= 10;     // >1s latency
+            else if (p95 > 500) runtimeScore -= 5;  // >500ms latency
+
+            // Deduct for Consistency
+            if (p50 > 0 && p99 / p50 > 4) runtimeScore -= 5; // Inconsistent tails
+
+            // Deduct for Throughput (don't penalize too hard if app is just small)
+            if (metrics.throughput < 10) runtimeScore -= 5;
+
+            // Cap at 0 (can't have negative runtime score)
+            runtimeScore = Math.max(0, runtimeScore);
+        } else {
+            // If we have github data but no metrics yet (e.g. before first test), 
+            // we don't grant free points.
+            runtimeScore = 0;
+        }
+
+        return Math.min(100, githubScore + runtimeScore);
+    };
+
+    const launchScore = calculateLaunchScore();
+    const healthStatus = launchScore >= 90 ? "Production Ready" : (launchScore >= 70 ? "Needs Optimization" : "Critical Issues");
+    const healthColor = launchScore >= 90 ? "text-green-500" : (launchScore >= 70 ? "text-yellow-500" : "text-red-500");
+
+    // Generate risk indicators
+    const getRiskIndicators = () => {
+        if (!metrics) return [];
+        const risks = [];
+
+        const failRate = metrics.failureRateUnderTest || 0;
+        const p95 = metrics.latency?.p95 || 0;
+        const p99 = metrics.latency?.p99 || 0;
+        const p50 = metrics.latency?.p50 || 0;
+
+        if (failRate > 0.01) {
+            risks.push({ level: "critical", text: `${(failRate * 100).toFixed(2)}% error rate - users will encounter failures` });
+        } else if (failRate > 0.001) {
+            risks.push({ level: "warning", text: `${(failRate * 100).toFixed(2)}% error rate - monitor closely` });
+        }
+
+        if (p95 > 1000) {
+            risks.push({ level: "critical", text: "5% of users experience >1s latency - poor UX" });
+        } else if (p95 > 500) {
+            risks.push({ level: "warning", text: "5% of users experience >500ms latency" });
+        }
+
+        if (p50 > 0 && p99 / p50 > 4) {
+            risks.push({ level: "warning", text: "Inconsistent performance - high latency variance" });
+        }
+
+        if (metrics.throughput < 50) {
+            risks.push({ level: "warning", text: "Low throughput - may struggle with traffic spikes" });
+        }
+
+        if (github && !github.docker?.present) {
+            risks.push({ level: "info", text: "No Docker detected - deployment complexity" });
+        }
+
+        if (github && !github.cicd?.present) {
+            risks.push({ level: "info", text: "No CI/CD detected - manual deployment risks" });
+        }
+
+        if (risks.length === 0) {
+            risks.push({ level: "success", text: "No critical issues detected - ready for launch" });
+        }
+
+        return risks;
+    };
+
+    const riskIndicators = getRiskIndicators();
 
     return (
         <Card className="flex flex-col h-full shadow-lg border-border/50 overflow-hidden">
             <CardHeader className="pb-2">
-                <CardTitle className="text-lg">System Health Gauge</CardTitle>
-                <CardDescription>Overall request success vs. failure breakdown</CardDescription>
+                <CardTitle className="text-lg">Launch Readiness Score</CardTitle>
+                <CardDescription>Composite health assessment for production deployment</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col items-center justify-center relative pt-4">
                 <div className="h-[250px] w-full relative">
-                    {hasData ? (
+                    {hasData || metrics ? (
                         <>
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
                                     <Pie
-                                        data={chartData}
+                                        data={[
+                                            { value: launchScore, color: launchScore >= 90 ? "#22c55e" : (launchScore >= 70 ? "#eab308" : "#ef4444") },
+                                            { value: 100 - launchScore, color: "#e5e7eb" }
+                                        ]}
                                         cx="50%"
                                         cy="50%"
                                         innerRadius={70}
                                         outerRadius={90}
-                                        paddingAngle={chartData.length > 1 ? 4 : 0}
+                                        startAngle={90}
+                                        endAngle={-270}
                                         dataKey="value"
                                         stroke="none"
-                                        cornerRadius={4}
                                     >
-                                        {chartData.map((entry: any, index: number) => (
-                                            <Cell key={`cell-${index}`} fill={entry.color ?? "#64748b"} />
+                                        {[0, 1].map((index) => (
+                                            <Cell key={`cell-${index}`} fill={index === 0 ? (launchScore >= 90 ? "#22c55e" : (launchScore >= 70 ? "#eab308" : "#ef4444")) : "#e5e7eb"} />
                                         ))}
                                     </Pie>
-                                    <Tooltip
-                                        contentStyle={{ borderRadius: '12px', border: '1px solid hsl(var(--border))', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', background: 'hsl(var(--background))' }}
-                                    />
                                 </PieChart>
                             </ResponsiveContainer>
                             {/* Center Label */}
                             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                <span className="text-3xl font-bold tracking-tight">{successValue.toFixed(1)}%</span>
+                                <span className="text-3xl font-bold tracking-tight">{launchScore.toFixed(0)}/100</span>
                                 <span className={`text-[10px] font-bold uppercase tracking-widest ${healthColor}`}>
                                     {healthStatus}
                                 </span>
@@ -97,19 +202,19 @@ export function SystemHealthChart({ data }: { data?: any[] }) {
                 </div>
 
                 <div className="flex flex-col gap-2 w-full mt-6 px-4">
-                    {rawData.map((entry: any, index: number) => (
-                        <div key={index} className="flex items-center justify-between text-xs">
-                            <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
-                                <span className="text-muted-foreground font-medium">{entry.name}</span>
-                            </div>
-                            <span className="font-mono font-bold">{entry.value.toFixed(1)}%</span>
+                    {riskIndicators.slice(0, 3).map((risk, index) => (
+                        <div key={index} className="flex items-start gap-2 text-xs">
+                            <div className={`w-2 h-2 rounded-full mt-1 flex-shrink-0 ${risk.level === 'critical' ? 'bg-red-500' :
+                                risk.level === 'warning' ? 'bg-yellow-500' :
+                                    risk.level === 'success' ? 'bg-green-500' : 'bg-blue-500'
+                                }`} />
+                            <span className="text-muted-foreground font-medium leading-tight">{risk.text}</span>
                         </div>
                     ))}
                 </div>
 
                 <p className="text-[10px] text-muted-foreground mt-6 text-center italic opacity-70">
-                    * Percentages relative to total test volume.
+                    * Score based on errors, latency, throughput, and DevOps maturity
                 </p>
             </CardContent>
         </Card>
@@ -336,6 +441,23 @@ export function SecurityRadarChart({ data, runtimeMetrics }: { data?: any[], run
 }
 
 export function SummaryMatrixTable({ metrics, github }: { metrics?: any, github?: any }) {
+    // Helper to safely parse failure rate from metrics
+    const getFailureRate = (m: any): number => {
+        if (!m) return 0;
+
+        if (typeof m.failureRateUnderTest === 'number') {
+            return m.failureRateUnderTest;
+        } else if (typeof m.errorRate === 'string') {
+            const parsed = parseFloat(m.errorRate);
+            return isNaN(parsed) ? 0 : parsed / 100;
+        } else if (typeof m.errorRate === 'number') {
+            return m.errorRate > 1 ? m.errorRate / 100 : m.errorRate;
+        }
+        return 0;
+    };
+
+    const failureRate = getFailureRate(metrics);
+
     const rows = [
         {
             category: "Performance",
@@ -348,10 +470,10 @@ export function SummaryMatrixTable({ metrics, github }: { metrics?: any, github?
             category: "Performance",
             metric: "Failure Rate",
             value: metrics && metrics.totalRequests > 0
-                ? `${((metrics.failureRateUnderTest ?? metrics.errorRate ?? 0) * 100).toFixed(2)}%`
+                ? `${(failureRate * 100).toFixed(2)}%`
                 : "N/A",
-            status: (metrics?.failureRateUnderTest ?? metrics?.errorRate ?? 0) < 0.01 ? "Pass" : ((metrics?.failureRateUnderTest ?? metrics?.errorRate ?? 0) < 0.05 ? "Warn" : "Fail"),
-            color: (metrics?.failureRateUnderTest ?? metrics?.errorRate ?? 0) < 0.01 ? "text-green-500" : ((metrics?.failureRateUnderTest ?? metrics?.errorRate ?? 0) < 0.05 ? "text-yellow-500" : "text-red-500")
+            status: failureRate < 0.01 ? "Pass" : (failureRate < 0.05 ? "Warn" : "Fail"),
+            color: failureRate < 0.01 ? "text-green-500" : (failureRate < 0.05 ? "text-yellow-500" : "text-red-500")
         },
         {
             category: "Performance",

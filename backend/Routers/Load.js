@@ -25,7 +25,7 @@ router.post("/", checkCreditsOrSub, async (req, res) => {
     // Run both in parallel to save time and avoid timeouts
     const [testResult, githubResult] = await Promise.all([
       testURL
-        ? runK6Test(testURL, { vus: 200, duration: "4s" }).catch(e => {
+        ? runK6Test(testURL, { vus: 150, duration: "5s" }).catch(e => {
           console.error("⚠️ K6 Test Failed:", e);
           return null;
         })

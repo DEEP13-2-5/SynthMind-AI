@@ -57,9 +57,9 @@ export default function Dashboard() {
       .then(setLatestData)
       .finally(() => setIsLoading(false));
 
-    // Poll every 1 second for "Live" updates
-    const interval = setInterval(fetchData, 1000);
-    return () => clearInterval(interval);
+    // Polling removed per user request to avoid log spam
+    // const interval = setInterval(fetchData, 1000);
+    // return () => clearInterval(interval);
   }, [user?.totalTests, token]);
 
   if (!user) return <Redirect to="/" />;
@@ -69,6 +69,18 @@ export default function Dashboard() {
 
   const m = latestData?.metrics;
   const g = latestData?.github;
+
+  /* ---------------- DEBUG LOGGING FOR ERROR DETECTION ---------------- */
+  // Log the raw metrics to see what's coming from backend
+  if (m) {
+    console.log("🔍 [Dashboard] Raw metrics from backend:", {
+      failureRateUnderTest: m.failureRateUnderTest,
+      serverErrorRate: m.serverErrorRate,
+      errorRate: m.errorRate,
+      throughput: m.throughput,
+      totalRequests: m.totalRequests
+    });
+  }
 
   /* ---------------- FALLBACK MOCK DATA (DEMO MODE) ---------------- */
   // Users requested REAL data even if 0. Disabling auto-mock.
@@ -117,8 +129,38 @@ export default function Dashboard() {
   const isFailed = m && m.totalRequests === 0 && (m.vus > 0 || m.duration === null);
 
   // Safe access to failure rate with fallback for legacy data
-  const failRate = m?.failureRateUnderTest ?? m?.errorRate ?? 0;
-  const serverRate = m?.serverErrorRate ?? 0;
+  // Backend sends these as decimals (0.05 = 5%), so we use them directly
+  // IMPORTANT: errorRate might be a string like "5.00%", so we prioritize failureRateUnderTest
+  let failRate = 0;
+  let serverRate = 0;
+
+  if (m) {
+    // Parse failureRateUnderTest (should be a decimal like 0.05)
+    if (typeof m.failureRateUnderTest === 'number') {
+      failRate = m.failureRateUnderTest;
+    } else if (typeof m.errorRate === 'string') {
+      // Fallback: parse string like "5.00%" to decimal
+      const parsed = parseFloat(m.errorRate);
+      failRate = isNaN(parsed) ? 0 : parsed / 100;
+    } else if (typeof m.errorRate === 'number') {
+      // If errorRate is already a number, check if it's percentage or decimal
+      failRate = m.errorRate > 1 ? m.errorRate / 100 : m.errorRate;
+    }
+
+    // Parse serverErrorRate (should be a decimal like 0.01)
+    if (typeof m.serverErrorRate === 'number') {
+      serverRate = m.serverErrorRate;
+    }
+  }
+
+  console.log("🔍 [Dashboard] Calculated rates:", {
+    failRate,
+    serverRate,
+    isFailed,
+    rawFailureRateUnderTest: m?.failureRateUnderTest,
+    rawErrorRate: m?.errorRate,
+    rawServerErrorRate: m?.serverErrorRate
+  });
 
   const healthData = m
     ? [
@@ -141,6 +183,9 @@ export default function Dashboard() {
       },
     ]
     : [];
+
+  // Debug log for health data
+  console.log("🔍 [Dashboard] Health Chart Data:", healthData);
 
   const throughputData = m
     ? [
@@ -171,6 +216,9 @@ export default function Dashboard() {
       },
     ]
     : [];
+
+  // Debug log for throughput data
+  console.log("🔍 [Dashboard] Throughput Chart Data:", throughputData);
 
   const toMs = (v?: number) => {
     if (typeof v !== "number" || v === 0) return 0;
@@ -298,7 +346,7 @@ export default function Dashboard() {
         ) : (
           <>
             <div className="grid lg:grid-cols-3 gap-8">
-              <SystemHealthChart data={healthData} />
+              <SystemHealthChart data={healthData} metrics={m} github={g} />
 
               <div ref={chatRef} className="lg:col-span-2 h-[600px]">
                 <DashboardChat

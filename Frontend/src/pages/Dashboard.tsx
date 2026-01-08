@@ -193,30 +193,33 @@ export default function Dashboard() {
           </Card>
         ) : (
           <>
-            {/* BUSINESS INSIGHTS (IF AVAILABLE) */}
+            {/* BUSINESS INSIGHTS (REVENUE/MARKETING) */}
             {business && (
               <div className="space-y-6">
                 <BusinessImpactCards business={business} />
-                <div className="grid md:grid-cols-2 gap-6">
-                  <CICDEnforcement risk={business.cicdRisk} />
-                  <StrategicRemediations remediations={business.remediations} />
-                </div>
               </div>
             )}
 
-            <div className="grid lg:grid-cols-3 gap-8">
+            {/* STRATEGIC OVERALL VIEW: SCORE + ACCELERATORS */}
+            <div className="grid lg:grid-cols-2 gap-8">
               <SystemHealthChart
                 metrics={m}
                 github={g}
               />
+              {business && (
+                <StrategicRemediations remediations={business.remediations} />
+              )}
+            </div>
 
-              <div ref={chatRef} className="lg:col-span-2">
+            {/* CHATTING SYSTEM - AI RESPONSE */}
+            {!hasNoData && (
+              <div ref={chatRef} className="animate-in fade-in slide-in-from-bottom-4 duration-700">
                 <DashboardChat
                   sessionId={latestData?.id}
                   initialMessage={ai?.message}
                 />
               </div>
-            </div>
+            )}
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               <ThroughputChart

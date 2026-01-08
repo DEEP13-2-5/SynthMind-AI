@@ -590,7 +590,7 @@ export function StrategicRemediations({ remediations }: { remediations?: string[
     if (!remediations || remediations.length === 0) return null;
 
     return (
-        <Card className="border-primary/20 bg-primary/5">
+        <Card className="border-primary/20 bg-primary/5 h-full">
             <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-black uppercase tracking-[0.2em] text-primary">Strategic Growth Accelerators</CardTitle>
                 <CardDescription className="text-xs">Immediate technical unlocks to increase throughput and revenue</CardDescription>

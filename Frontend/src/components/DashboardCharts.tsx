@@ -2,7 +2,8 @@ import {
     PieChart, Pie, Cell,
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
     BarChart, Bar, AreaChart, Area,
-    Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis
+    Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+    ReferenceLine
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Activity } from "lucide-react";
@@ -222,7 +223,7 @@ export function SystemHealthChart({ data, metrics, github }: { data?: any[], met
     );
 }
 
-export function ThroughputChart({ data }: { data?: any[] }) {
+export function ThroughputChart({ data, collapsePoint }: { data?: any[], collapsePoint?: number }) {
     const chartData = data || throughputData;
     const isEmpty =
         !data ||
@@ -291,6 +292,21 @@ export function ThroughputChart({ data }: { data?: any[] }) {
                                     fill="url(#colorError)"
                                     name="Failed Reqs/s"
                                 />
+                                {collapsePoint && (
+                                    <ReferenceLine
+                                        y={collapsePoint}
+                                        label={{
+                                            value: `Collapse Point @ ${collapsePoint} req/s`,
+                                            fill: '#ef4444',
+                                            fontSize: 10,
+                                            fontWeight: 'bold',
+                                            position: 'insideTopRight'
+                                        }}
+                                        stroke="#ef4444"
+                                        strokeDasharray="3 3"
+                                        strokeWidth={2}
+                                    />
+                                )}
                             </AreaChart>
                         </ResponsiveContainer>
                     )}
@@ -532,7 +548,7 @@ export function CollapsePointChart({ metrics, business }: { metrics?: any, busin
                                         return (
                                             <div className="bg-background border border-primary/20 p-3 rounded-lg shadow-xl">
                                                 <p className="text-sm font-bold text-primary">{payload[0].payload.name}</p>
-                                                <p className="text-2xl font-black">{Math.round(payload[0].value)} VUs</p>
+                                                <p className="text-2xl font-black">{Math.round(Number(payload[0].value || 0))} VUs</p>
                                                 <p className={`text-xs mt-1 ${payload[0].payload.status === 'Collapse' ? 'text-red-500 font-bold uppercase' : 'text-muted-foreground'}`}>
                                                     {payload[0].payload.status === 'Collapse' ? '🔥 CRITICAL LIMIT' : 'SYSTEM STATUS: STABLE'}
                                                 </p>
@@ -570,38 +586,125 @@ export function CollapsePointChart({ metrics, business }: { metrics?: any, busin
     );
 }
 
+export function StrategicRemediations({ remediations }: { remediations?: string[] }) {
+    if (!remediations || remediations.length === 0) return null;
+
+    return (
+        <Card className="border-primary/20 bg-primary/5">
+            <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-black uppercase tracking-[0.2em] text-primary">Strategic Growth Accelerators</CardTitle>
+                <CardDescription className="text-xs">Immediate technical unlocks to increase throughput and revenue</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3 pt-2">
+                {remediations.map((item, i) => (
+                    <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-background border border-primary/10 hover:border-primary/30 transition-all cursor-default group">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-black text-xs group-hover:scale-110 transition-transform">
+                            {i + 1}
+                        </div>
+                        <p className="text-sm font-semibold tracking-tight">{item}</p>
+                    </div>
+                ))}
+            </CardContent>
+        </Card>
+    );
+}
+
+export function CICDEnforcement({ risk }: { risk?: any }) {
+    if (!risk) return null;
+
+    return (
+        <Card className="border-red-500/30 bg-red-500/5 overflow-hidden relative">
+            <div className="absolute top-0 right-0 p-2">
+                <div className="px-2 py-0.5 rounded text-[8px] font-black bg-red-500 text-white animate-pulse uppercase">
+                    Critical Exposure
+                </div>
+            </div>
+            <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-black uppercase tracking-[0.2em] text-red-500">DevOps Integrity Enforcement</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="flex items-start gap-4">
+                    <div className="p-3 bg-red-500/20 rounded-xl">
+                        <Activity className="w-6 h-6 text-red-500" />
+                    </div>
+                    <div>
+                        <p className="text-lg font-black leading-tight text-foreground">{risk.consequence}</p>
+                        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                            {risk.details}
+                        </p>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
 export function BusinessImpactCards({ business }: { business?: any }) {
     if (!business) return null;
 
+    const breakdown = business.scoreBreakdown || { performance: 0, architecture: 0, devops: 0 };
+
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="bg-blue-500/5 border-blue-500/20 overflow-hidden transform hover:scale-[1.02] transition-all">
+            <Card className="bg-blue-500/5 border-blue-500/20 overflow-hidden transform hover:scale-[1.02] transition-all relative group">
+                <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                 <CardHeader className="p-4 pb-0">
                     <CardDescription className="text-xs font-bold uppercase tracking-wider text-blue-400">Revenue Leakage</CardDescription>
                 </CardHeader>
                 <CardContent className="p-4 pt-2">
-                    <div className="text-3xl font-black text-blue-500">{business.conversionLoss}% Churn</div>
-                    <p className="text-xs text-muted-foreground mt-1">Direct conversion loss for every 1s of latency detected.</p>
+                    <div className="text-4xl font-black text-blue-500 tracking-tighter">{business.conversionLoss}% <span className="text-lg font-bold">Churn</span></div>
+                    <p className="text-xs text-muted-foreground mt-2 font-medium">Predicted conversion drop due to p95 latency bottlenecks.</p>
                 </CardContent>
             </Card>
 
-            <Card className="bg-orange-500/5 border-orange-500/20 overflow-hidden transform hover:scale-[1.02] transition-all">
+            <Card className="bg-orange-500/5 border-orange-500/20 overflow-hidden transform hover:scale-[1.02] transition-all relative group">
+                <div className="absolute inset-0 bg-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                 <CardHeader className="p-4 pb-0">
                     <CardDescription className="text-xs font-bold uppercase tracking-wider text-orange-400">Marketing Exposure</CardDescription>
                 </CardHeader>
                 <CardContent className="p-4 pt-2">
-                    <div className="text-3xl font-black text-orange-500">₹{business.adSpendRisk} / Day</div>
-                    <p className="text-xs text-muted-foreground mt-1">Predicted ad budget wasted due to failed landing requests.</p>
+                    <div className="text-2xl font-black text-orange-500 tracking-tighter">₹{business.adSpendRisk.toLocaleString()} <span className="text-sm font-bold">/ Day</span></div>
+                    <p className="text-xs text-muted-foreground mt-2 font-medium">Daily budget wasted on failing landing requests at scale.</p>
                 </CardContent>
             </Card>
 
             <Card className="bg-emerald-500/5 border-emerald-500/20 overflow-hidden transform hover:scale-[1.02] transition-all">
-                <CardHeader className="p-4 pb-0">
-                    <CardDescription className="text-xs font-bold uppercase tracking-wider text-emerald-400">Strategic Stability Score</CardDescription>
+                <CardHeader className="p-4 pb-0 flex flex-row items-center justify-between">
+                    <CardDescription className="text-xs font-bold uppercase tracking-wider text-emerald-400">Stability Matrix</CardDescription>
+                    <div className="text-xl font-black text-emerald-500">{Math.round(business.stabilityRiskScore)}/100</div>
                 </CardHeader>
-                <CardContent className="p-4 pt-2">
-                    <div className="text-3xl font-black text-emerald-500">{Math.round(business.stabilityRiskScore)} / 100</div>
-                    <p className="text-xs text-muted-foreground mt-1">Overall readiness score for a public viral launch.</p>
+                <CardContent className="p-4 pt-2 pb-5">
+                    <div className="space-y-3">
+                        <div className="space-y-1">
+                            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-tighter">
+                                <span>Performance</span>
+                                <span>{breakdown.performance}%</span>
+                            </div>
+                            <div className="w-full bg-emerald-500/10 h-1 rounded-full overflow-hidden">
+                                <div className="bg-emerald-500 h-full transition-all duration-1000" style={{ width: `${breakdown.performance}%` }} />
+                            </div>
+                        </div>
+
+                        <div className="space-y-1">
+                            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-tighter">
+                                <span>Architecture</span>
+                                <span>{breakdown.architecture}%</span>
+                            </div>
+                            <div className="w-full bg-emerald-500/10 h-1 rounded-full overflow-hidden">
+                                <div className="bg-emerald-500 h-full transition-all duration-1000" style={{ width: `${breakdown.architecture}%` }} />
+                            </div>
+                        </div>
+
+                        <div className="space-y-1">
+                            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-tighter">
+                                <span>DevOps</span>
+                                <span>{breakdown.devops}%</span>
+                            </div>
+                            <div className="w-full bg-emerald-500/10 h-1 rounded-full overflow-hidden">
+                                <div className="bg-emerald-500 h-full transition-all duration-1000" style={{ width: `${breakdown.devops}%` }} />
+                            </div>
+                        </div>
+                    </div>
                 </CardContent>
             </Card>
         </div>

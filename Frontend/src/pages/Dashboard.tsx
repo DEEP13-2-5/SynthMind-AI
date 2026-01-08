@@ -4,14 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Redirect, useLocation } from "wouter";
 import {
+  Plus,
   Activity,
   Cpu,
   Clock,
   BrainCircuit,
   Loader2,
   RefreshCw,
+  MessageSquare,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { DashboardChat } from "@/components/DashboardChat";
 import {
@@ -21,7 +23,9 @@ import {
   SecurityRadarChart,
   SummaryMatrixTable,
   BusinessImpactCards,
-  CollapsePointChart
+  CollapsePointChart,
+  StrategicRemediations,
+  CICDEnforcement
 } from "@/components/DashboardCharts";
 
 export default function Dashboard() {
@@ -29,6 +33,7 @@ export default function Dashboard() {
   const [, setLocation] = useLocation();
   const [latestData, setLatestData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const chatRef = useRef<HTMLDivElement>(null);
 
   /* ---------------- FETCH LATEST TEST ---------------- */
   const fetchData = () => {
@@ -57,8 +62,6 @@ export default function Dashboard() {
   const business = ai?.businessInsights;
 
   /* ---------------- DATA SYNTHESIS FOR CHARTS ---------------- */
-
-  // 1. Throughput Data Synthesis (Trend simulation based on final result)
   const variance = (base: number) => {
     const v = base * 0.15;
     return Math.max(0, base - v + Math.random() * (v * 2));
@@ -72,7 +75,6 @@ export default function Dashboard() {
     { timestamp: "Latest", success: m.throughput * (1 - m.failureRateUnderTest), errors: m.throughput * m.failureRateUnderTest }
   ] : [];
 
-  // 2. Scalability Data Synthesis
   const toMs = (v?: number) => {
     if (typeof v !== "number" || v === 0) return 0;
     return v > 10 ? v : v * 1000;
@@ -85,7 +87,6 @@ export default function Dashboard() {
     { percentile: "Avg", latency: toMs(m.latency?.avg) },
   ].filter(i => i.latency > 0) : [];
 
-  // 3. Security Radar Data
   const securityData = b ? [
     { subject: "Performance", A: b.performance || 0, fullMark: 100 },
     { subject: "Access", A: b.accessibility || 0, fullMark: 100 },
@@ -130,122 +131,116 @@ export default function Dashboard() {
             <div className="flex items-center gap-2 mb-1">
               <BrainCircuit className="w-5 h-5 text-primary animate-pulse" />
               <span className="text-xs font-bold tracking-widest text-primary uppercase">
-                {hasNoData ? "Agentic AI Active" : "Insight Lab Powered"}
+                {hasNoData ? "Agentic AI Active" : "Audit Complete"}
               </span>
             </div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              {hasNoData ? "Dashboard Overview" : "Strategic Launch Audit"}
+
+            <h1 className="text-3xl font-bold">
+              {hasNoData ? "Dashboard Overview" : "Strategic Analysis"}
             </h1>
-            <p className="text-muted-foreground mt-1 text-sm font-medium">
+
+            <p className="text-muted-foreground mt-1 text-sm">
               {hasNoData
-                ? `Welcome, ${user.username}! Initialize your first audit to see the "Harsh Reality."`
-                : `Auditing Infrastructure & Browser Profile for: ${latestData?.url}`}
+                ? `Welcome, ${user.username}! Run your first audit to see the "Harsh Reality."`
+                : `Auditing: ${latestData?.url}`}
             </p>
           </div>
 
           <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" onClick={fetchData} disabled={isLoading} className="gap-2 border-2 hover:bg-primary/5">
-              <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
-              Sync Data
-            </Button>
-            <Button size="sm" className="gap-2 shadow-lg shadow-primary/25 font-bold" onClick={() => setLocation("/load-test")}>
-              <Activity className="w-4 h-4" />
-              Begin Launch Audit
+            {isLoading && <Loader2 className="w-5 h-5 animate-spin text-primary" />}
+
+            {!hasNoData && (
+              <Button
+                variant="outline"
+                onClick={() => chatRef.current?.scrollIntoView({ behavior: "smooth" })}
+                className="gap-2"
+              >
+                <MessageSquare className="w-4 h-4" />
+                Ask AI
+              </Button>
+            )}
+
+            <Button size="lg" className="gap-2" onClick={() => setLocation("/load-test")}>
+              <Plus className="w-5 h-5" />
+              New Load Test
             </Button>
           </div>
         </div>
 
-        {/* 1️⃣ BUSINESS IMPACT CARDS - THE "$$ CONVERSION" */}
-        {!hasNoData && business && (
-          <div className="animate-in fade-in slide-in-from-top-4 duration-700">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="h-2 w-2 rounded-full bg-primary" />
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/80">
-                Business & Revenue Risk Mapping
-              </span>
-            </div>
-            <BusinessImpactCards business={business} />
-          </div>
-        )}
-
-        {/* STATS OVERVIEW */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {stats.map((stat) => (
-            <Card key={stat.label} className="group hover:border-primary/50 transition-all bg-background/50 backdrop-blur-sm border-2 duration-300">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className={`p-4 rounded-2xl bg-background border-2 flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
-                    <stat.icon className={`w-6 h-6 ${stat.color}`} />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{stat.label}</p>
-                    <h3 className="text-3xl font-black tracking-tighter">{stat.value}</h3>
-                  </div>
-                </div>
+        {/* STATS CARDS */}
+        <div className="grid sm:grid-cols-3 gap-6">
+          {stats.map((stat, i) => (
+            <Card key={i}>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  {stat.label}
+                </CardTitle>
+                <stat.icon className={`h-4 w-4 ${stat.color}`} />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stat.value}</div>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        {/* ANALYSIS GRID - CORE CHARTS */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-8 flex flex-col gap-8">
-            <SystemHealthChart
-              metrics={m}
-              github={g}
-            />
+        {/* MAIN GRID */}
+        {hasNoData ? (
+          <Card className="border-dashed border-2">
+            <CardContent className="py-20 text-center text-muted-foreground">
+              Run your first load test to view system health, charts, and AI analysis.
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            {/* BUSINESS INSIGHTS (IF AVAILABLE) */}
+            {business && (
+              <div className="space-y-6">
+                <BusinessImpactCards business={business} />
+                <div className="grid md:grid-cols-2 gap-6">
+                  <CICDEnforcement risk={business.cicdRisk} />
+                  <StrategicRemediations remediations={business.remediations} />
+                </div>
+              </div>
+            )}
 
-            {/* 4️⃣ KILLER VISUAL: ARCHITECTURE COLLAPSE POINT */}
-            {!hasNoData && business && (
-              <CollapsePointChart
+            <div className="grid lg:grid-cols-3 gap-8">
+              <SystemHealthChart
                 metrics={m}
-                business={business}
+                github={g}
               />
-            )}
 
-            <ThroughputChart data={throughputData} />
-          </div>
-
-          <div className="lg:col-span-4 flex flex-col gap-8">
-            <SecurityRadarChart data={securityData} />
-            <ScalabilityChart data={scalabilityData} />
-
-            {/* SMALL AI VERDICT SUMMARY BOX */}
-            {!hasNoData && (
-              <Card className="border-primary/20 bg-primary/5">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-bold uppercase tracking-widest text-primary">Executive Summary</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-xs text-muted-foreground leading-relaxed line-clamp-4">
-                    {ai?.message?.split('\n\n')[0] || "Audit complete. View the full SynthMind AI Verdict below."}
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </div>
-
-        {/* AGENTIC AI & CHAT INTERFACE */}
-        {!hasNoData && (
-          <div className="grid grid-cols-1 gap-8">
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-              <DashboardChat sessionId={latestData?.id} initialInsight={ai?.message} />
+              <div ref={chatRef} className="lg:col-span-2">
+                <DashboardChat
+                  sessionId={latestData?.id}
+                  initialMessage={ai?.message}
+                />
+              </div>
             </div>
-          </div>
-        )}
 
-        {/* FULL DATA MATRIX */}
-        {!hasNoData && (
-          <div className="animate-in fade-in duration-1000">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="h-2 w-2 rounded-full bg-muted-foreground/50" />
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/80">
-                Detailed Telemetry Matrix
-              </span>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <ThroughputChart
+                data={throughputData}
+                collapsePoint={business?.collapsePoint}
+              />
+              <ScalabilityChart data={scalabilityData} />
+              <SecurityRadarChart data={securityData} />
+
+              {/* COLLAPSE POINT INTEGRATED INTO GRID */}
+              {business && (
+                <div className="md:col-span-2 lg:col-span-3">
+                  <CollapsePointChart
+                    metrics={m}
+                    business={business}
+                  />
+                </div>
+              )}
             </div>
-            <SummaryMatrixTable metrics={m} github={g} />
-          </div>
+
+            <div className="mt-8">
+              <SummaryMatrixTable metrics={m} github={g} />
+            </div>
+          </>
         )}
       </div>
     </Layout>

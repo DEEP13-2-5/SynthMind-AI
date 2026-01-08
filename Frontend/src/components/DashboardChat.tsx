@@ -60,7 +60,7 @@ export function DashboardChat({ sessionId, initialMessage }: DashboardChatProps)
                                 <div className="bg-white/50 backdrop-blur-sm text-foreground border border-primary/10 rounded-2xl px-4 py-2 rounded-tl-none shadow-sm">
                                     <div className="prose prose-sm dark:prose-invert max-w-none">
                                         <ReactMarkdown>
-                                            {initialMessage || "Xiomi here. Reviewing your latest technical telemetry... 🦾\n\nAsk me anything about your latency trajectories, hardware bottlenecks, or scalability risks."}
+                                            {initialMessage || "Based on current telemetry, your system will not survive organic growth. Reviewing your technical trajectories now... 🦾\n\nAsk me about your latency trajectories, hardware bottlenecks, or scalability risks."}
                                         </ReactMarkdown>
                                     </div>
                                 </div>

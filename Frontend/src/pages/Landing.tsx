@@ -60,7 +60,7 @@ export default function Landing() {
         <section className="container mx-auto px-4 pt-20 pb-32 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-bold mb-8 animate-bounce">
             <Zap className="w-4 h-4" />
-            <span>Now with AI-Powered Remediation</span>
+            <span>Now with AI-Powered Explanations</span>
           </div>
 
           <h1 className="text-5xl md:text-8xl font-black font-display tracking-tighter mb-6 leading-[0.9] lg:leading-[1.1]">

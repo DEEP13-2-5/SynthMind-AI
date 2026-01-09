@@ -89,21 +89,10 @@ export default function Landing() {
             <div className="relative rounded-2xl border border-white/10 shadow-2xl overflow-hidden glass-card">
               <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent z-10" />
               <img
-                src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2670&auto=format&fit=crop"
-                alt="SynthMind AI Dashboard"
+                src="https://images.unsplash.com/photo-1629904853716-f0bc54fee481?q=80&w=2670&auto=format&fit=crop"
+                alt="SynthMind AI Platform"
                 className="w-full h-auto opacity-90 hover:scale-[1.02] transition-transform duration-700"
               />
-              <div className="absolute inset-x-0 bottom-0 p-8 z-20 flex justify-between items-end">
-                <div className="text-left">
-                  <p className="text-sm font-bold text-white/50 uppercase tracking-widest mb-1">Live Deployment</p>
-                  <p className="text-2xl font-bold text-white">99.9% Success Rate</p>
-                </div>
-                <div className="flex gap-2">
-                  <div className="h-2 w-12 bg-primary rounded-full" />
-                  <div className="h-2 w-12 bg-primary/30 rounded-full" />
-                  <div className="h-2 w-12 bg-primary/30 rounded-full" />
-                </div>
-              </div>
             </div>
           </div>
         </section>
@@ -145,24 +134,6 @@ export default function Landing() {
                   <p className="text-muted-foreground leading-relaxed font-medium">{feature.desc}</p>
                 </div>
               ))}
-            </div>
-          </div>
-        </section>
-
-        {/* CTA */}
-        <section className="py-24">
-          <div className="container mx-auto px-4">
-            <div className="relative rounded-[3rem] overflow-hidden bg-slate-900 p-12 md:p-24 text-center">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-accent/20" />
-              <div className="relative z-10">
-                <h2 className="text-4xl md:text-6xl font-black text-white mb-8">Ready to ship with <br /><span className="text-primary">Confidence?</span></h2>
-                <p className="text-xl text-slate-400 max-w-2xl mx-auto mb-12">Join 200+ teams who use SynthMind AI to verify their infrastructure daily.</p>
-                <Link href="/signup">
-                  <Button size="lg" className="rounded-full px-12 h-16 text-xl font-bold bg-white text-slate-900 hover:bg-slate-100 shadow-2xl">
-                    Get Started Now
-                  </Button>
-                </Link>
-              </div>
             </div>
           </div>
         </section>

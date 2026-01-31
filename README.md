@@ -1,36 +1,60 @@
-# SyncMind AI (Nexus Launch Twin)
+# Prefracta AI (Launch Intelligence Platform)
 
-**SyncMind AI** is a SaaS-based launch-readiness and stability intelligence platform designed to help developers and startups **validate their product before going live**.
+**Prefracta AI** is a **B2B SaaS launch-intelligence platform** that helps engineering teams, startups, and organizations determine **whether a software product is truly ready for production launch**.
 
-It securely mirrors a GitHub repository in a **temporary cloud environment**, executes controlled load tests and real-browser audits, destroys the infrastructure after execution, and returns **clear, actionable insights** — without exposing or retaining source code.
+It orchestrates **multiple real-world system signals** — load, browser behavior, infrastructure stress, and cost impact — and uses **AI orchestration** to convert them into a **single, precise launch verdict**.
+
+> **One question. One answer.**
+> *“Is this product safe to launch — yes or no?”*
 
 ---
 
 ## 🚀 What Problem It Solves
 
-Many products fail immediately after launch due to:
+Most software products fail **not because of missing features**, but because of:
 
 * Unknown scalability limits
-* Latency spikes under real user load
-* Hidden frontend performance and accessibility issues
-* Unexpected infrastructure cost escalation
+* Latency spikes under real traffic
+* Hidden frontend performance & accessibility issues
+* Unexpected infrastructure cost explosions
 
-SyncMind AI answers one critical question:
-
-> **“Is my product ready to launch — yes or no?”**
+Traditional tools analyze **parts** of the system.
+Prefracta AI evaluates the **entire launch surface**.
 
 ---
 
-## 🧠 How It Works (High-Level Flow)
+## 🧠 How Prefracta AI Works (High-Level)
 
-1. User connects a GitHub repository via **OAuth (read-only)**
-2. Repository is cloned into a **temporary Azure workspace**
-3. **Load tests (k6)** are executed to simulate real traffic
-4. **Browser-level audits (Playwright)** analyze performance, accessibility, SEO, and best practices
-5. Metrics are collected and correlated
-6. Temporary cloud infrastructure is **fully destroyed**
-7. Results are displayed on a **Launch Readiness Dashboard**
-8. **Agentic AI** explains risks, collapse points, and remediation in plain language
+1. User connects a **GitHub repository** (read-only)
+2. Repository is mirrored in a **temporary cloud environment**
+3. **Load tests** simulate real user traffic (k6)
+4. **Real-browser audits** run via Playwright
+5. System, frontend, and cost metrics are collected
+6. **AI Orchestration Layer** correlates all signals
+7. Temporary infrastructure is **fully destroyed**
+8. User receives a **clear launch-readiness verdict**
+
+---
+
+## 🤖 AI Orchestration (Core Differentiator)
+
+Prefracta AI does **not** run a single AI model.
+
+It performs **AI orchestration**, where multiple independent signals are combined:
+
+* Backend stress & failure thresholds
+* Frontend real-user experience metrics
+* Accessibility & SEO compliance
+* Cost amplification under load
+* System collapse points
+
+The AI layer **correlates these inputs** and produces:
+
+* A **precise readiness verdict**
+* Failure explanations in plain language
+* Actionable risk breakdowns
+
+> This is **decision intelligence**, not a chatbot.
 
 ---
 
@@ -39,48 +63,45 @@ SyncMind AI answers one critical question:
 * Latency (p50 / p95 / p99)
 * Error & failure rate
 * Maximum sustainable concurrent users
-* Browser performance & accessibility scores (Playwright)
+* Browser performance scores (Playwright)
+* Accessibility & best-practice audits
 * Estimated infrastructure cost impact
-* Overall launch readiness score
+* Overall **Launch Readiness Score**
 
 ---
 
-## 🔐 Security & Privacy
+## 🔐 Security & Privacy by Design
 
 * ✅ Read-only GitHub access
 * ❌ No AI access to source code
 * ❌ No static code scanning
-* 🧨 Temporary cloud environment (auto-destroyed after testing)
-* 🔒 Zero source code retention
+* 🧨 Temporary cloud environment (auto-destroyed)
+* 🔒 Zero source-code retention
 
 ---
 
-## 🤖 Agentic AI Insights
+## 💼 B2B SaaS Model (Freemium)
 
-SyncMind AI does not act as a chatbot.
-It acts as a **launch auditor**, explaining:
+Prefracta AI follows a **freemium B2B SaaS model**:
 
-* **Why** performance degradation occurs
-* **What** breaks first under load
-* **When** scaling becomes unsafe
-* **Whether** the application is production-ready
+### Free Tier
 
----
+* Limited audits
+* Core launch metrics
+* Ideal for individual developers & early testing
 
-## 💳 SaaS Model & Billing
+### Paid Plans
 
-SyncMind AI is designed as a **Software-as-a-Service (SaaS)** platform.
+* Full audit depth
+* Higher load limits
+* Advanced AI explanations
+* Team & organization usage
 
-* Subscription-based access model
-* **Razorpay integration (Test Mode)** implemented for billing workflows
-* Supports usage-based audit execution
-* No production payments enabled at this stage
-
-> Billing is currently configured in **test mode only** for development, validation, and demonstration purposes.
+> Billing infrastructure is implemented in **test mode** for development and validation.
 
 ---
 
-## 🛠 Tech Stack
+## 🛠 Technology Stack
 
 * **Frontend:** React, Chart.js
 * **Backend:** Node.js
@@ -88,7 +109,7 @@ SyncMind AI is designed as a **Software-as-a-Service (SaaS)** platform.
 * **Load Testing:** k6
 * **Browser Audits:** Playwright
 * **Cloud:** Azure (temporary workspace)
-* **AI Layer:** Agentic AI (MiniMax M2.1)
+* **AI Layer:** Agentic AI (Orchestration-based)
 * **Payments:** Razorpay (Test Mode)
 * **Deployment:** Vercel (Frontend)
 
@@ -96,22 +117,23 @@ SyncMind AI is designed as a **Software-as-a-Service (SaaS)** platform.
 
 ## 🧩 Project Status
 
-* Core system architecture: ✅
+* Core architecture: ✅
 * Dashboard & analytics: ✅
 * GitHub OAuth integration: ✅
 * Load testing engine (k6): ✅
 * Browser audits (Playwright): ✅
-* SaaS billing flow (Razorpay – test mode): ✅
+* AI orchestration logic: ✅
 * Full automation engine: 🚧 (manual orchestration at present)
 
 ---
 
 ## 📌 Vision
 
-SyncMind AI aims to become a **standard pre-launch validation layer** for modern software — helping teams identify risk, performance limits, and user-impact issues **before real users experience failure**.
+Prefracta AI aims to become the **standard pre-launch validation layer** for modern software systems — helping teams detect **real-world failure risks before real users do**.
 
 ---
 
 ## 📄 License
 
 This project is shared for **educational, research, and demonstration purposes**.
+
